@@ -1,6 +1,7 @@
 /**
  * @author Kaish Panjwani
- * @file 183168050_a04.c
+ * @author Ravish Virani
+ * @file 183168050_173084290_a04.c
  * @version 2020-07-23
 */
 
@@ -11,7 +12,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h> //For sleep
+#include <pthread.h>
 
+// Define
+#define MAXCUSTOMER 5
+#define MAXRESOURCE 4
+#define MAXIN 200
+
+int allocation[MAXCUSTOMER][MAXRESOURCE]; //customers allocated in a 2d array
 
 
 // Main Driver
@@ -22,6 +31,9 @@ int main(int argc, char *argv[])
 		printf("INPUT ERROR: 'Available' resources Data Missing... Exiting with Error Code -1\n");
 		return -1;
 	}
+	
+	//Printing Number of Customers
+	printf("Number of Customers: %d\n", MAXCUSTOMER);
 
 	/**
 	 * ----------------------------------------------------------------
@@ -42,11 +54,13 @@ int main(int argc, char *argv[])
 	 * ----------------------------------------------------------------
 	 * Ask for input from user for Number of Customers
 	 * ----------------------------------------------------------------
-	 * */
+	 * 
 
 	int customers;
 	printf("Number of Customers: ");
 	scanf("%d", &customers);
+	
+	*/
 
 
 
@@ -153,4 +167,93 @@ int main(int argc, char *argv[])
 
 		printf("\n");
 	}
+	
+	//char
+	
+	char wrd[MAXIN];
+    char com[MAXIN];
+    char req[MAXIN] = "RQ"; //resource requesting
+    char rel[MAXIN] = "RL"; //resource releasing
+    char str[MAXIN] = "*\n";
+    char run[MAXIN] = "run\n";
+    char exit_prog[MAXIN] = "exit\n";
+	
+	/**
+	 * ----------------------------------------------------------------
+	 * Asking for initial request to initially run while loop
+	 * ----------------------------------------------------------------
+	 * */
+	 
+	 printf("Enter Request: ");
+	 fgets(wrd, MAXIN, stdin);
+	 strcpy(com, wrd);
+	 int work = 0;
+	 
+	 /**
+	 * ----------------------------------------------------------------
+	 * Programs main logic when exit has not been initiated
+	 * ----------------------------------------------------------------
+	 * */
+	 
+	 while (strcmp(com,exit_prog) != 0)
+	 {
+		 if (work > 0)
+		 {
+			printf("Enter Request: ");
+            fgets(wrd, sizeof wrd, stdin);
+            strcpy(com, wrd);
+        }
+		
+		//wrd splitting
+		int total_wrd = 0;
+		for (int z = 0; com[z] != '\0'; z++)
+		{
+			if (com[z] == ' ' || com[z] == '\n' || comm [w] == '\t')
+			{
+				total_wrd++;
+			}
+		}
+		
+		// parser initialization
+		char *tkn = strtok(com, " ");
+		char *input_str[MAXIN];
+		
+		int i=0;
+		if (total_wrd >= 2)
+		{
+			while (tkn != NULL $$ i <= MAXCUSTOMER)
+			{
+				input_str[i] = tkn;
+				tkn = strtok(NULL, " ");
+				i += 1;
+			}
+		}
+		else {
+		strcpy(input_str[0], com);}
+		
+		int str_len = i;
+		i = 0;
+		
+		// end of parser
+		
+	 /**
+	 * ----------------------------------------------------------------
+	 * Resource Request
+	 * ----------------------------------------------------------------
+	 * */
+		
+		if (strcmp(input_str[0], req) == 0) {
+			if (atoi (input_str[1]) >= MAXCUSTOMER) {
+				printf("Allocation array cannot be larger then Max number of customers\n");
+				continue;
+			}
+			for (int y = 2; y < (str_len); y++) {
+				allocation[atoi(input_str[1])][y-2] = atoi(input_string[y]);
+			}
+			printf("Request Successful\n");
+		}
+		
+			
+			
+	 
 }
