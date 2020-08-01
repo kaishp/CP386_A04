@@ -79,3 +79,10 @@ Screenshots will be added under here in future...
 
 1. *README.md* file updated
 
+#### Fourth Commit:
+1. Resourse Request
+2. Resource Release
+
+#### Fifth Commit:
+1. Function when input is star.
+

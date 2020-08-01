@@ -20,7 +20,10 @@
 #define MAXRESOURCE 4
 #define MAXIN 200
 
+int needed[MAXCUSTOMER][MAXRESOURCE];
+int maxarray[MAXCUSTOMER][MAXRESOURCE];
 int allocation[MAXCUSTOMER][MAXRESOURCE]; //customers allocated in a 2d array
+void needed_resources(int, int, int aloc[MAXCUSTOMER][MAXRESOURCE], int maxi[MAXCUSTOMER][MAXRESOURCE]);
 
 
 // Main Driver
@@ -42,7 +45,7 @@ int main(int argc, char *argv[])
 	 * ----------------------------------------------------------------
 	 * */
 
-	int available_size = argc - 1;
+	int available_size = MAXRESOURCE;
 	int available[available_size];
 
 	for (int i = 0; i < available_size; i++)
@@ -70,10 +73,10 @@ int main(int argc, char *argv[])
 	 * ----------------------------------------------------------------
 	 * */
 
-	int maximum[customers][available_size]; // Declare 2D Array
+	int maximum[MAXCUSTOMER][available_size]; // Declare 2D Array
 
 	// Initialize maximum array to zeros
-	for(int m = 0; m < customers; m++) {
+	for(int m = 0; m < MAXCUSTOMER; m++) {
     	for(int n = 0; n < available_size; n++) {
     		maximum[m][n] = 0;
     	}
@@ -103,7 +106,7 @@ int main(int argc, char *argv[])
 
 	fclose(in);
 
-	char* lines[customers];
+	char* lines[MAXCUSTOMER];
 	char *command = NULL;
 	int i = 0;
 	command = strtok(fileContent,"\r\n");
@@ -118,7 +121,7 @@ int main(int argc, char *argv[])
 	}
 
 	// Tokenize each line and add individual numbers into the array
-	for(int k = 0; k < customers; k++)
+	for(int k = 0; k < MAXCUSTOMER; k++)
 	{
 		char* token = NULL;
 		int l = 0;
@@ -156,8 +159,8 @@ int main(int argc, char *argv[])
 	 * */
 
 	printf("Maximum resources from file:\n");
-
-	for (int i = 0; i < customers; i++) {
+	
+		for (int i = 0; i < MAXCUSTOMER; i++) {
     	for (int j = 0; j < available_size; j++) {
 			printf("%d", maximum[i][j]);
 			
@@ -199,7 +202,7 @@ int main(int argc, char *argv[])
 	 {
 		 if (work > 0)
 		 {
-			printf("Enter Request: ");
+			printf("Enter Command: ");
             fgets(wrd, sizeof wrd, stdin);
             strcpy(com, wrd);
         }
@@ -248,12 +251,102 @@ int main(int argc, char *argv[])
 				continue;
 			}
 			for (int y = 2; y < (str_len); y++) {
-				allocation[atoi(input_str[1])][y-2] = atoi(input_string[y]);
+				allocation[atoi(input_str[1])][y-2] = atoi(input_str[y]);
 			}
-			printf("Request Successful\n");
+			printf("Request is satisfied\n");
 		}
 		
+	 /**
+	 * ----------------------------------------------------------------
+	 * Resource Release
+	 * ----------------------------------------------------------------
+	 * */		
+		
+		if (strcmp(input_str[0], rel) == 0)
+        {
+            int quit_if;
+            for (int q = 2; q < (length_string); q++)
+            {
+                int releasevalue;
+                //release value from allocation 2d array
+                releasevalue = allocation[atoi(input_str[1])][q - 2] - atoi(input_str[q]);
+
+                //error when releasing
+                if (releasevalue < 0) {
+                    printf("Release if unsatisfied\n");
+                    quit_if = 1;
+                    break;
+                }
+                else {
+                    allocation[atoi(input_str[1])][q - 2] = releasevalue;
+                }
+            }
+            if (quit_if == 1) {
+                continue;
+            }
+
+            printf("Release is satisfied\n");
+        }
+		
+	 /**
+	 * ----------------------------------------------------------------
+	 * Show all details with * command
+	 * ----------------------------------------------------------------
+	 * */			
+		
+		if (strcmp(input_str[0], str) == 0) {
+			// Current state
+			printf("Showing current state of arrays.\n");
+			int l, p;
+			printf("Currently Available Resources: ");
+			for (i = 1; i < MAXCUSTOMER; l++) {
+				printf("%d\n", available[l]);
+			}
 			
+			//Maximum
+			printf("Maximum Resources: \n");
 			
-	 
+			for (int i = 0; i < MAXCUSTOMER; i++) {
+			for (int j = 0; j < available_size; j++) {
+				printf("%d", maximum[i][j]);
+			
+				if (j != available_size - 1)
+					printf(",");
+			}
+
+			printf("\n");
+			}
+		}
+		
+		//Allocation Resources
+		printf("Allocation Resources: \n");
+		for (l = 0; l < MAXCUSTOMER; l++) {
+			for (p = 0; p < MAXRESOURCE; p++) {
+				printf("%d ", allocation[l][p]);
+                }
+				printf("\n");
+        }
+        printf("\n");}
+		
+		//Needed Resources
+		printf("Needed Resources: \n");
+		needed_resources(MAXRESOURCE, MAXCUSTOMER, allocation, maxarray);
+		for (l = 0; l < MAXCUSTOMER; l++) {
+			for (p = 0; p < MAXRESOURCE; p++) {
+				printf("%d ", needed[l][p]);
+			}
+			printf("\n");
+		}
+		printf("\n");
+		
+}
+
+void needed_resources(int i, int j, int aloc[i][j], int maxi[i][j]) {
+	int m, n;
+	
+	for (m = 0, m < j; m++) {
+		for (n = 0; n < i; n++){
+			needed[m][n] = maxi[m][n] - aloc[i][j];
+		}
+	}
 }
