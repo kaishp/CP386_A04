@@ -85,4 +85,9 @@ Screenshots will be added under here in future...
 
 #### Fifth Commit:
 1. Function when input is star.
+2. void needed_resources added
 
+####Sixth Commit:
+1. function *thrdR for run thread
+2. run command code
+3. *README.md* file updated

@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <unistd.h> //For sleep
+#include <unistd.h>
 #include <pthread.h>
 
 // Define
@@ -24,6 +24,11 @@ int needed[MAXCUSTOMER][MAXRESOURCE];
 int maxarray[MAXCUSTOMER][MAXRESOURCE];
 int allocation[MAXCUSTOMER][MAXRESOURCE]; //customers allocated in a 2d array
 void needed_resources(int, int, int aloc[MAXCUSTOMER][MAXRESOURCE], int maxi[MAXCUSTOMER][MAXRESOURCE]);
+int banker (int, int, int aloc[MAXCUSTOMER][MAXRESOURCE], int maxi[MAXCUSTOMER][MAXRESOURCE] int availab[MAXRESOURCE], int needed[MAXCUSTOMER][MAXRESOURCE]);
+int arr[MAXCUSTOMER];
+void *thrdR (void *p);
+
+
 
 
 // Main Driver
@@ -45,7 +50,7 @@ int main(int argc, char *argv[])
 	 * ----------------------------------------------------------------
 	 * */
 
-	int available_size = MAXRESOURCE;
+	int available_size = argc - 1;
 	int available[available_size];
 
 	for (int i = 0; i < available_size; i++)
@@ -187,19 +192,17 @@ int main(int argc, char *argv[])
 	 * ----------------------------------------------------------------
 	 * */
 	 
-	 printf("Enter Request: ");
+	 printf("Enter Command: ");
 	 fgets(wrd, MAXIN, stdin);
 	 strcpy(com, wrd);
 	 int work = 0;
 	 
-	 /**
-	 * ----------------------------------------------------------------
-	 * Programs main logic when exit has not been initiated
-	 * ----------------------------------------------------------------
-	 * */
-	 
-	 while (strcmp(com,exit_prog) != 0)
-	 {
+	/**
+	* ----------------------------------------------------------------
+	* Programs main logic when exit has not been initiated
+	* ----------------------------------------------------------------
+	* */
+	while (strcmp(com,exit_prog) != 0) {
 		 if (work > 0)
 		 {
 			printf("Enter Command: ");
@@ -326,7 +329,7 @@ int main(int argc, char *argv[])
                 }
 				printf("\n");
         }
-        printf("\n");}
+        printf("\n");
 		
 		//Needed Resources
 		printf("Needed Resources: \n");
@@ -339,7 +342,41 @@ int main(int argc, char *argv[])
 		}
 		printf("\n");
 		
+		
+	/**
+	 * ----------------------------------------------------------------
+	 *  When Run is in the input value
+	 *	Run all the threads and find teh safe sequence
+	 * ----------------------------------------------------------------
+	 * */		
+		
+		if (strcmp(input_str[0], run) == 0) {
+			printf("Executing run command");
+			needed_resources(MAXRESOURCE, MAXCUSTOMER, allocation, maxarray);
+			int respond = banker(MAXRESOURCE, MAXCUSTOMER, allocation, maxarray, available, needed);
+			if (respond != 0) {
+				printf("Safe sequence not found.\n");
+				return(-1);
+			}
+			printf("Safe Sequence found. %d\n"), respond);
+			for (int g = 0; g < MAXCUSTOMER; g++) {
+				int ind = arr[g];
+				printf("%d\n", ind);
+				pthread_t tid;
+				pthread_create(&tid, NULL, thrdR, &ind);
+				pthread_join(tid, NULL);
+			}
+		}
+		
+		work += 1;
+	}
+	
+	return (0);
 }
+
+// show testing
+int testing() { return 1; }
+
 
 void needed_resources(int i, int j, int aloc[i][j], int maxi[i][j]) {
 	int m, n;
@@ -349,4 +386,44 @@ void needed_resources(int i, int j, int aloc[i][j], int maxi[i][j]) {
 			needed[m][n] = maxi[m][n] - aloc[i][j];
 		}
 	}
+}
+
+/**
+ * ----------------------------------------------------------------
+ *  Run thread
+ * ----------------------------------------------------------------
+ * */	
+
+void *thrdR (void *p) {
+	int m;
+	sleep(1);
+	int *customer = (int *)p;
+	printf("-->Customer/Thread %d\n", *customer);
+	
+	printf("\t\tAllocated Resources:\t");
+	for (m = 0; m < MAXRESOURCE; i++) {
+		printf("%d \n", allocation[*customer][m]);
+	}
+	
+	printf("\t\tNeeded:\t");
+	for (m = 0; m < MAXRESOURCE; m++) {
+		printf("%d \n", needed[*customer][i]);
+	}
+	
+	printf("\t\tAvailable");
+	for (m = 0; m < MAXRESOURCE; m++) {
+		printf("%d \n", available[i]);
+	}
+	
+	printf("\t\tThread has started\n");
+	printf("\t\tThread has finished\n");
+	printf("\t\tThread is realeasing resources\n");
+	
+	printf("\t\tNew Available: ");
+	for (m = 0; m < MAXRESOURCE; m++) {
+		available[m] = available[m] + allocation[*customer][m];
+		printf("%d \n", available[m]);
+	}
+	
+	return NULL;
 }
