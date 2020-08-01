@@ -24,9 +24,9 @@ int needed[MAXCUSTOMER][MAXRESOURCE];
 int maxarray[MAXCUSTOMER][MAXRESOURCE];
 int allocation[MAXCUSTOMER][MAXRESOURCE]; //customers allocated in a 2d array
 void needed_resources(int, int, int aloc[MAXCUSTOMER][MAXRESOURCE], int maxi[MAXCUSTOMER][MAXRESOURCE]);
-int banker (int, int, int aloc[MAXCUSTOMER][MAXRESOURCE], int maxi[MAXCUSTOMER][MAXRESOURCE] int availab[MAXRESOURCE], int needed[MAXCUSTOMER][MAXRESOURCE]);
+int banker (int, int, int aloc[MAXCUSTOMER][MAXRESOURCE], int maxi[MAXCUSTOMER][MAXRESOURCE], int availab[MAXRESOURCE], int needed[MAXCUSTOMER][MAXRESOURCE]);
 int arr[MAXCUSTOMER];
-void *thrdR (void *p);
+void *thrdR (void *p, int available[]);
 
 
 
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 		int total_wrd = 0;
 		for (int z = 0; com[z] != '\0'; z++)
 		{
-			if (com[z] == ' ' || com[z] == '\n' || comm [w] == '\t')
+			if (com[z] == ' ' || com[z] == '\n' || com [z] == '\t')
 			{
 				total_wrd++;
 			}
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 		int i=0;
 		if (total_wrd >= 2)
 		{
-			while (tkn != NULL $$ i <= MAXCUSTOMER)
+			while (tkn != NULL && i <= MAXCUSTOMER)
 			{
 				input_str[i] = tkn;
 				tkn = strtok(NULL, " ");
@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
 		if (strcmp(input_str[0], rel) == 0)
         {
             int quit_if;
-            for (int q = 2; q < (length_string); q++)
+            for (int q = 2; q < (str_len); q++)
             {
                 int releasevalue;
                 //release value from allocation 2d array
@@ -300,9 +300,8 @@ int main(int argc, char *argv[])
 		if (strcmp(input_str[0], str) == 0) {
 			// Current state
 			printf("Showing current state of arrays.\n");
-			int l, p;
 			printf("Currently Available Resources: ");
-			for (i = 1; i < MAXCUSTOMER; l++) {
+			for (int l = 1; l < MAXCUSTOMER; l++) {
 				printf("%d\n", available[l]);
 			}
 			
@@ -323,8 +322,8 @@ int main(int argc, char *argv[])
 		
 		//Allocation Resources
 		printf("Allocation Resources: \n");
-		for (l = 0; l < MAXCUSTOMER; l++) {
-			for (p = 0; p < MAXRESOURCE; p++) {
+		for (int l = 0; l < MAXCUSTOMER; l++) {
+			for (int p = 0; p < MAXRESOURCE; p++) {
 				printf("%d ", allocation[l][p]);
                 }
 				printf("\n");
@@ -334,8 +333,8 @@ int main(int argc, char *argv[])
 		//Needed Resources
 		printf("Needed Resources: \n");
 		needed_resources(MAXRESOURCE, MAXCUSTOMER, allocation, maxarray);
-		for (l = 0; l < MAXCUSTOMER; l++) {
-			for (p = 0; p < MAXRESOURCE; p++) {
+		for (int l = 0; l < MAXCUSTOMER; l++) {
+			for (int p = 0; p < MAXRESOURCE; p++) {
 				printf("%d ", needed[l][p]);
 			}
 			printf("\n");
@@ -358,7 +357,7 @@ int main(int argc, char *argv[])
 				printf("Safe sequence not found.\n");
 				return(-1);
 			}
-			printf("Safe Sequence found. %d\n"), respond);
+			printf("Safe Sequence found. %d\n", respond);
 			for (int g = 0; g < MAXCUSTOMER; g++) {
 				int ind = arr[g];
 				printf("%d\n", ind);
@@ -379,10 +378,10 @@ int testing() { return 1; }
 
 
 void needed_resources(int i, int j, int aloc[i][j], int maxi[i][j]) {
-	int m, n;
+
 	
-	for (m = 0, m < j; m++) {
-		for (n = 0; n < i; n++){
+	for (int m = 0; m < j; m++) {
+		for (int n = 0; n < i; n++){
 			needed[m][n] = maxi[m][n] - aloc[i][j];
 		}
 	}
@@ -394,25 +393,24 @@ void needed_resources(int i, int j, int aloc[i][j], int maxi[i][j]) {
  * ----------------------------------------------------------------
  * */	
 
-void *thrdR (void *p) {
-	int m;
+void *thrdR (void *p, int available[]) {
 	sleep(1);
 	int *customer = (int *)p;
 	printf("-->Customer/Thread %d\n", *customer);
 	
 	printf("\t\tAllocated Resources:\t");
-	for (m = 0; m < MAXRESOURCE; i++) {
+	for (int m = 0; m < MAXRESOURCE; m++) {
 		printf("%d \n", allocation[*customer][m]);
 	}
 	
 	printf("\t\tNeeded:\t");
-	for (m = 0; m < MAXRESOURCE; m++) {
-		printf("%d \n", needed[*customer][i]);
+	for (int m = 0; m < MAXRESOURCE; m++) {
+		printf("%d \n", needed[*customer][m]);
 	}
 	
 	printf("\t\tAvailable");
-	for (m = 0; m < MAXRESOURCE; m++) {
-		printf("%d \n", available[i]);
+	for (int m = 0; m < MAXRESOURCE; m++) {
+		printf("%d \n", available[m]);
 	}
 	
 	printf("\t\tThread has started\n");
@@ -420,7 +418,7 @@ void *thrdR (void *p) {
 	printf("\t\tThread is realeasing resources\n");
 	
 	printf("\t\tNew Available: ");
-	for (m = 0; m < MAXRESOURCE; m++) {
+	for (int m = 0; m < MAXRESOURCE; m++) {
 		available[m] = available[m] + allocation[*customer][m];
 		printf("%d \n", available[m]);
 	}

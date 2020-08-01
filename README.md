@@ -91,3 +91,6 @@ Screenshots will be added under here in future...
 1. function *thrdR for run thread
 2. run command code
 3. *README.md* file updated
+
+####Seventh Commit:
+1. Errors Solved.
