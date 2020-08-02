@@ -51,7 +51,7 @@ This project is licensed under MIT License. Please review the *LICENSE.md* file 
 
 A sample execution of the program:
 
-![Screenshot](C:\Users\kaish\Documents\VSC Workspace\CP386\183168050_a04\Resources\Screenshot.PNG)
+![Screenshot](https://imgur.com/JtucW6G)
 
  
 
@@ -125,3 +125,7 @@ A sample execution of the program:
 
 1. Available, Needed, Allocated arrays are now Globally Declared and Dynamically Allocated
 2. <u>Function</u>: threadRun() now works correctly
+
+
+#### Tenth Commit:
+1. *README.md* file updated
