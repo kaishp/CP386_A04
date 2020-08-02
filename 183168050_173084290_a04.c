@@ -2,8 +2,16 @@
  * @author Kaish Panjwani
  * @author Ravish Virani
  * @file 183168050_173084290_a04.c
- * @version 2020-07-23
-*/
+ * @version 2020-08-01
+ **/
+
+
+/**
+ * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ * 						Link to GitHub Repository:
+ * 				   https://github.com/kaishp/CP386_A04
+ * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ **/
 
 
 
@@ -12,26 +20,26 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <pthread.h>
 
-// Define
-#define MAXCUSTOMER 5
-#define MAXRESOURCE 4
+
 #define MAXIN 200
 
-int needed[MAXCUSTOMER][MAXRESOURCE];
-int maxarray[MAXCUSTOMER][MAXRESOURCE];
-int allocation[MAXCUSTOMER][MAXRESOURCE]; //customers allocated in a 2d array
-void needed_resources(int, int, int aloc[MAXCUSTOMER][MAXRESOURCE], int maxi[MAXCUSTOMER][MAXRESOURCE]);
-int banker (int, int, int aloc[MAXCUSTOMER][MAXRESOURCE], int maxi[MAXCUSTOMER][MAXRESOURCE], int availab[MAXRESOURCE], int needed[MAXCUSTOMER][MAXRESOURCE]);
-int arr[MAXCUSTOMER];
-void *thrdR (void *p, int available[]);
+
+// Declaration
+int getCustCount(char *filename);
+void calcNeeded(int i, int j, int allocated[i][j], int maximum[i][j], int needed[i][j]);
+void reCalcCurrent(int i, int j, int allocated[j][i], int available[i]);
+int bankerAlgorithm(int m, int n, int allocated[n][m], int maximum[n][m], int available[m], int needed[n][m], int arr[n]);
+void *threadRun(void *p);
 
 
 
-
-// Main Driver
+/**
+ * ================================================================
+ * main - Main Driver for the program
+ * ================================================================
+ **/
 int main(int argc, char *argv[])
 {
 	if(argc<2)
@@ -39,16 +47,13 @@ int main(int argc, char *argv[])
 		printf("INPUT ERROR: 'Available' resources Data Missing... Exiting with Error Code -1\n");
 		return -1;
 	}
-	
-	//Printing Number of Customers
-	printf("Number of Customers: %d\n", MAXCUSTOMER);
 
 	/**
 	 * ----------------------------------------------------------------
 	 * Storing Available resources Data from Command line Input into 
 	 * an Array
 	 * ----------------------------------------------------------------
-	 * */
+	 **/
 
 	int available_size = argc - 1;
 	int available[available_size];
@@ -60,15 +65,12 @@ int main(int argc, char *argv[])
 
 	/**
 	 * ----------------------------------------------------------------
-	 * Ask for input from user for Number of Customers
+	 * Find Number of Customers for given file and print
 	 * ----------------------------------------------------------------
-	 * 
+	 **/
 
-	int customers;
-	printf("Number of Customers: ");
-	scanf("%d", &customers);
-	
-	*/
+	int customers = getCustCount("sample4_in.txt") + 1;
+	printf("Number of Customers: %d\n", customers);
 
 
 
@@ -76,12 +78,12 @@ int main(int argc, char *argv[])
 	 * ----------------------------------------------------------------
 	 * Read data from file and insert into Maximum resources array
 	 * ----------------------------------------------------------------
-	 * */
+	 **/
 
-	int maximum[MAXCUSTOMER][available_size]; // Declare 2D Array
+	int maximum[customers][available_size]; // Declare 2D Array
 
 	// Initialize maximum array to zeros
-	for(int m = 0; m < MAXCUSTOMER; m++) {
+	for(int m = 0; m < customers; m++) {
     	for(int n = 0; n < available_size; n++) {
     		maximum[m][n] = 0;
     	}
@@ -111,7 +113,7 @@ int main(int argc, char *argv[])
 
 	fclose(in);
 
-	char* lines[MAXCUSTOMER];
+	char* lines[customers];
 	char *command = NULL;
 	int i = 0;
 	command = strtok(fileContent,"\r\n");
@@ -126,7 +128,7 @@ int main(int argc, char *argv[])
 	}
 
 	// Tokenize each line and add individual numbers into the array
-	for(int k = 0; k < MAXCUSTOMER; k++)
+	for(int k = 0; k < customers; k++)
 	{
 		char* token = NULL;
 		int l = 0;
@@ -146,7 +148,7 @@ int main(int argc, char *argv[])
 	 * ----------------------------------------------------------------
 	 * Print Currently Available resources
 	 * ----------------------------------------------------------------
-	 * */
+	 **/
 
 	printf("Currently Available resources:");
 
@@ -161,11 +163,11 @@ int main(int argc, char *argv[])
 	 * ----------------------------------------------------------------
 	 * Print Maximum resources from file
 	 * ----------------------------------------------------------------
-	 * */
+	 **/
 
 	printf("Maximum resources from file:\n");
-	
-		for (int i = 0; i < MAXCUSTOMER; i++) {
+
+	for (int i = 0; i < customers; i++) {
     	for (int j = 0; j < available_size; j++) {
 			printf("%d", maximum[i][j]);
 			
@@ -175,49 +177,76 @@ int main(int argc, char *argv[])
 
 		printf("\n");
 	}
-	
-	//char
-	
-	char wrd[MAXIN];
+
+
+
+	/**
+	 * ----------------------------------------------------------------
+	 * Initializing Command Strings (char arrays)
+	 * ----------------------------------------------------------------
+	 **/
+
+	char string[MAXIN];
     char com[MAXIN];
-    char req[MAXIN] = "RQ"; //resource requesting
-    char rel[MAXIN] = "RL"; //resource releasing
-    char str[MAXIN] = "*\n";
-    char run[MAXIN] = "run\n";
-    char exit_prog[MAXIN] = "exit\n";
+    char req[MAXIN] = "RQ"; //Resource Requesting
+    char rel[MAXIN] = "RL"; //Resource Releasing
+    char str[MAXIN] = "*\n"; // New Line
+    char run[MAXIN] = "run\n"; // Run Safe Sequence
+    char exit_prog[MAXIN] = "exit\n"; // Exit Program
 	
+
+
+	/**
+	 * ----------------------------------------------------------------
+	 * Initializing Arrays
+	 * ----------------------------------------------------------------
+	 **/
+
+	int allocated[customers][available_size]; // Declare 2D array for Allocated
+	int needed[customers][available_size]; // Declare 2D array for Needed
+	int arr[customers]; // Temporary array for storing data
+
+	// Initialize allocated array to zeros
+	for(int m = 0; m < customers; m++) {
+    	for(int n = 0; n < available_size; n++)
+    		allocated[m][n] = 0;
+	}
+
+
+
 	/**
 	 * ----------------------------------------------------------------
 	 * Asking for initial request to initially run while loop
 	 * ----------------------------------------------------------------
-	 * */
-	 
-	 printf("Enter Command: ");
-	 fgets(wrd, MAXIN, stdin);
-	 strcpy(com, wrd);
-	 int work = 0;
-	 
+	 **/
+
+	printf("Enter Command: ");
+	fgets(string, MAXIN, stdin);
+	strcpy(com, string);
+	int work = 0;
+
+
+
 	/**
-	* ----------------------------------------------------------------
-	* Programs main logic when exit has not been initiated
-	* ----------------------------------------------------------------
-	* */
+	 * ----------------------------------------------------------------
+	 * Programs main logic when exit has not been initiated
+	 * ----------------------------------------------------------------
+	 **/
+
 	while (strcmp(com,exit_prog) != 0) {
 		 if (work > 0)
 		 {
 			printf("Enter Command: ");
-            fgets(wrd, sizeof wrd, stdin);
-            strcpy(com, wrd);
+            fgets(string, sizeof string, stdin);
+            strcpy(com, string);
         }
 		
-		//wrd splitting
-		int total_wrd = 0;
+		// String splitting
+		int total_string = 0;
 		for (int z = 0; com[z] != '\0'; z++)
 		{
 			if (com[z] == ' ' || com[z] == '\n' || com [z] == '\t')
-			{
-				total_wrd++;
-			}
+				total_string++;
 		}
 		
 		// parser initialization
@@ -225,17 +254,18 @@ int main(int argc, char *argv[])
 		char *input_str[MAXIN];
 		
 		int i=0;
-		if (total_wrd >= 2)
+		if (total_string >= 2)
 		{
-			while (tkn != NULL && i <= MAXCUSTOMER)
+			while (tkn != NULL && i <= customers)
 			{
 				input_str[i] = tkn;
 				tkn = strtok(NULL, " ");
 				i += 1;
 			}
 		}
-		else {
-		strcpy(input_str[0], com);}
+		
+		else
+			strcpy(input_str[0], com);
 		
 		int str_len = i;
 		i = 0;
@@ -244,184 +274,329 @@ int main(int argc, char *argv[])
 		
 	 /**
 	 * ----------------------------------------------------------------
-	 * Resource Request
+	 * COMMAND: RQ - Resource Request
 	 * ----------------------------------------------------------------
 	 * */
 		
 		if (strcmp(input_str[0], req) == 0) {
-			if (atoi (input_str[1]) >= MAXCUSTOMER) {
-				printf("Allocation array cannot be larger then Max number of customers\n");
-				continue;
+			if (atoi (input_str[1]) >= customers) { // Idiot Proofing the RQ command
+				printf("Allocated index cannot be larger then Max Number of Customers\n");
+				// continue;
 			}
-			for (int y = 2; y < (str_len); y++) {
-				allocation[atoi(input_str[1])][y-2] = atoi(input_str[y]);
+
+			else {
+				for (int y = 2; y < (str_len); y++) // Store requested resource data
+					allocated[atoi(input_str[1])][y-2] = atoi(input_str[y]); // Convert inputted allocated resource information from string to integer
+
+				printf("Request is satisfied\n");
 			}
-			printf("Request is satisfied\n");
 		}
 		
 	 /**
 	 * ----------------------------------------------------------------
-	 * Resource Release
+	 * COMMAND: RL - Resource Release
 	 * ----------------------------------------------------------------
 	 * */		
 		
-		if (strcmp(input_str[0], rel) == 0)
+		else if (strcmp(input_str[0], rel) == 0)
         {
-            int quit_if;
-            for (int q = 2; q < (str_len); q++)
-            {
-                int releasevalue;
-                //release value from allocation 2d array
-                releasevalue = allocation[atoi(input_str[1])][q - 2] - atoi(input_str[q]);
+            int quit_flag; // Used when a Requested Release is unsatisfied
 
-                //error when releasing
-                if (releasevalue < 0) {
-                    printf("Release if unsatisfied\n");
-                    quit_if = 1;
-                    break;
-                }
-                else {
-                    allocation[atoi(input_str[1])][q - 2] = releasevalue;
-                }
-            }
-            if (quit_if == 1) {
-                continue;
-            }
+			if (atoi (input_str[1]) >= customers) { // Idiot Proofing the RQ command
+				printf("Allocated index cannot be larger then Max Number of Customers\n");
+				// continue;
+			}
 
-            printf("Release is satisfied\n");
+			else {
+
+				for (int q = 2; q < (str_len); q++)
+				{
+					int release_value;
+					release_value = allocated[atoi(input_str[1])][q - 2] - atoi(input_str[q]); //Calculating Release value from Allocated 2D array
+
+					if (release_value < 0) { // Idiot Proofing the RL command, to avoid Allocated Resource value to fall below 0
+						printf("Release is unsatisfied\n");
+						quit_flag = 1; 
+						break;
+					}
+					
+					else
+						allocated[atoi(input_str[1])][q - 2] = release_value; // Changing the value of currently pointed release value
+
+					if (q = str_len - 1)
+						printf("Release is satisfied\n");
+				}
+
+				// Leave the loop and start over from the while loop (Reject value inputted)
+
+				if (quit_flag == 1)
+					continue;
+			}
         }
 		
 	 /**
 	 * ----------------------------------------------------------------
-	 * Show all details with * command
+	 * COMMAND: * - Display details
 	 * ----------------------------------------------------------------
 	 * */			
 		
-		if (strcmp(input_str[0], str) == 0) {
-			// Current state
-			printf("Showing current state of arrays.\n");
-			printf("Currently Available Resources: ");
-			for (int l = 1; l < MAXCUSTOMER; l++) {
-				printf("%d\n", available[l]);
-			}
+		else if (strcmp(input_str[0], str) == 0) {
 			
-			//Maximum
+			// Print Current state
+			printf("Showing current state of arrays:\n\n");
+			
+
+			// Print Currently Available Resources
+			printf("Currently Available Resources: ");
+
+			reCalcCurrent(available_size, customers, allocated, available);
+
+
+			for (int l = 0; l < available_size; l++)
+				printf("%d ", available[l]);
+
+
+			printf("\n\n");
+			
+
+			// Print Maximum Resources
 			printf("Maximum Resources: \n");
 			
-			for (int i = 0; i < MAXCUSTOMER; i++) {
-			for (int j = 0; j < available_size; j++) {
-				printf("%d", maximum[i][j]);
+			for (int l = 0; l < customers; l++) {
+				for (int p = 0; p < available_size; p++)
+					printf("%d ", maximum[l][p]);
+
+				printf("\n");
+			}
+
+
+			printf("\n");
+
+
+			//  Print Allocated Resources
+			printf("Allocated Resources: \n");
+
+			for (int l = 0; l < customers; l++) {
+				for (int p = 0; p < available_size; p++)
+					printf("%d ", allocated[l][p]);
+				
+				printf("\n");
+        	}
+
+
+			printf("\n");
+		
+
+			// Print Needed Resources
+			printf("Needed Resources: \n");
 			
-				if (j != available_size - 1)
-					printf(",");
+			calcNeeded(available_size, customers, allocated, maximum, needed);
+
+			for (int l = 0; l < customers; l++) {
+				for (int p = 0; p < available_size; p++)
+					printf("%d ", needed[l][p]);
+
+				printf("\n");
 			}
 
 			printf("\n");
-			}
 		}
 		
-		//Allocation Resources
-		printf("Allocation Resources: \n");
-		for (int l = 0; l < MAXCUSTOMER; l++) {
-			for (int p = 0; p < MAXRESOURCE; p++) {
-				printf("%d ", allocation[l][p]);
-                }
-				printf("\n");
-        }
-        printf("\n");
-		
-		//Needed Resources
-		printf("Needed Resources: \n");
-		needed_resources(MAXRESOURCE, MAXCUSTOMER, allocation, maxarray);
-		for (int l = 0; l < MAXCUSTOMER; l++) {
-			for (int p = 0; p < MAXRESOURCE; p++) {
-				printf("%d ", needed[l][p]);
-			}
-			printf("\n");
-		}
-		printf("\n");
 		
 		
 	/**
 	 * ----------------------------------------------------------------
-	 *  When Run is in the input value
-	 *	Run all the threads and find teh safe sequence
+	 *  COMMAND: run - Run threads and find safe sequence
 	 * ----------------------------------------------------------------
-	 * */		
+	 * */
 		
-		if (strcmp(input_str[0], run) == 0) {
-			printf("Executing run command");
-			needed_resources(MAXRESOURCE, MAXCUSTOMER, allocation, maxarray);
-			int respond = banker(MAXRESOURCE, MAXCUSTOMER, allocation, maxarray, available, needed);
+		else if (strcmp(input_str[0], run) == 0) {
+			printf("Executing run command\n");
+			
+			calcNeeded(available_size, customers, allocated, maximum, needed);
+			int respond = bankerAlgorithm(available_size, customers, allocated, maximum, available, needed, arr);
+			
 			if (respond != 0) {
-				printf("Safe sequence not found.\n");
-				return(-1);
+				printf("Safe sequence not found... :(\n");
+				return -1;
 			}
-			printf("Safe Sequence found. %d\n", respond);
-			for (int g = 0; g < MAXCUSTOMER; g++) {
+
+			for (int g = 0; g < customers; g++) {
 				int ind = arr[g];
-				printf("%d\n", ind);
+				printf("--> Customer/Thread %d\n", ind);
+				
+				// Running the thread
 				pthread_t tid;
-				pthread_create(&tid, NULL, thrdR, &ind);
+				pthread_create(&tid, NULL, threadRun, &ind);
 				pthread_join(tid, NULL);
 			}
 		}
 		
 		work += 1;
 	}
-	
-	return (0);
+
+
+	return 0;
 }
 
-// show testing
-int testing() { return 1; }
 
-
-void needed_resources(int i, int j, int aloc[i][j], int maxi[i][j]) {
-
-	
-	for (int m = 0; m < j; m++) {
-		for (int n = 0; n < i; n++){
-			needed[m][n] = maxi[m][n] - aloc[i][j];
-		}
-	}
-}
 
 /**
- * ----------------------------------------------------------------
- *  Run thread
- * ----------------------------------------------------------------
- * */	
-
-void *thrdR (void *p, int available[]) {
-	sleep(1);
-	int *customer = (int *)p;
-	printf("-->Customer/Thread %d\n", *customer);
+ * ================================================================
+ * getCustCount - Count number of "\n" occurances in the given file
+ * ================================================================
+ **/
+int getCustCount(char *filename) {
 	
-	printf("\t\tAllocated Resources:\t");
-	for (int m = 0; m < MAXRESOURCE; m++) {
-		printf("%d \n", allocation[*customer][m]);
+	// Variable Declarations
+	FILE *fileptr;
+    int count_lines = 0;
+    char c;
+ 
+    fileptr = fopen(filename, "r"); // Open File
+
+    c = getc(fileptr); // Extract Character from File and store in variable 'c'
+    
+	while (c != EOF)
+    {
+		// Increment Count Lines when "\n" is present
+        if (c == '\n')
+            count_lines++;
+
+        c = getc(fileptr);
+    }
+
+    fclose(fileptr); // Close file
+
+    return count_lines;
+}
+
+
+
+/**
+ * ================================================================
+ * calcNeeded - Calculates Needed Resources
+ * ================================================================
+ **/
+void calcNeeded(int i, int j, int allocated[j][i], int maximum[j][i], int needed[j][i]) {
+
+	for (int m = 0; m < j; m++) {
+		for (int n = 0; n < i; n++)
+			needed[m][n] = maximum[m][n] - allocated[m][n];
 	}
+}
+
+
+
+/**
+ * ================================================================
+ * reCalcCurrent - Calculates Current Resources
+ * ================================================================
+ **/
+void reCalcCurrent(int i, int j, int allocated[j][i], int available[i]) {
+
+	// int temp;
+	// int temp2;
+
+	// for (int m = 0; m < i; m++) {
+	// 	temp = 0;
+
+	// 	for (int n = 0; n < j; n++)
+	// 		temp = temp + allocated[n][m];
+
+	// 	temp2 = available[i] - temp;
+	// 	available[i] = temp2;
+	// }
+}
+
+
+
+/**
+ * ================================================================
+ * bankerAlgorithm - Performs the Banker's Algorithm
+ * ================================================================
+ **/
+int bankerAlgorithm(int m, int n, int allocated[n][m], int maximum[n][m], int available[m], int needed[n][m], int arr[n])
+{
+    int i, j, k;
+    int safe = 1;
+
+    int f[n], ind = 0;
+    for (k = 0; k < n; k++)
+        f[k] = 0;
+
+    int y = 0;
+    for (k = 0; k < m; k++)
+    {
+        for (i = 0; i < n; i++)
+        {
+            if (f[i] == 0)
+            {
+
+                int flag = 0;
+                for (j = 0; j < m; j++)
+                {
+                    if (needed[i][j] > available[j])
+                    {
+                        flag = 1;
+                        break;
+                    }
+                }
+
+                if (flag == 0)
+                {
+                    arr[ind++] = i;
+
+                    for (y = 0; y < m; y++)
+                        available[y] += allocated[i][y];
+
+                    f[i] = 1;
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        if (f[i] == 0)
+            safe = 0;
+    }
+
+    if (safe == 0)
+        return -1;
+
+    printf("Safe Sequence is: <");
+
+    for (i = 0; i < n - 1; i++)
+        printf("%d ", arr[i]);
+
+    printf("%d>\n", arr[n - 1]);
+	printf("Now going to executing the threads:\n\n\n");
+
+    return 0;
+}
+
+
+
+/**
+ * ================================================================
+ * threadRun - This function is run by a thread
+ * ================================================================
+ **/
+void *threadRun(void *p) {
+
+	printf("\t\tAllocated Resources:\t");
 	
 	printf("\t\tNeeded:\t");
-	for (int m = 0; m < MAXRESOURCE; m++) {
-		printf("%d \n", needed[*customer][m]);
-	}
 	
 	printf("\t\tAvailable");
-	for (int m = 0; m < MAXRESOURCE; m++) {
-		printf("%d \n", available[m]);
-	}
 	
 	printf("\t\tThread has started\n");
 	printf("\t\tThread has finished\n");
 	printf("\t\tThread is realeasing resources\n");
 	
 	printf("\t\tNew Available: ");
-	for (int m = 0; m < MAXRESOURCE; m++) {
-		available[m] = available[m] + allocation[*customer][m];
-		printf("%d \n", available[m]);
-	}
 	
 	return NULL;
+
 }
