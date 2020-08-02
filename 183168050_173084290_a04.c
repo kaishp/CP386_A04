@@ -16,21 +16,43 @@
 
 
 // Include
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include <semaphore.h>
 
+
+
+// Structure
+typedef struct customer {
+	int customers;
+	int record_size;
+} Customer;
+
+
+
+// Variables
+int *available;
+int **allocated;
+int **needed;
+
+Customer *cust;
 
 #define MAXIN 200
+
+sem_t sem_even; // Initializing Even Semaphore
+sem_t sem_odd;// Initializing Odd Semaphore
+
 
 
 // Declaration
 int getCustCount(char *filename);
-void calcNeeded(int i, int j, int allocated[i][j], int maximum[i][j], int needed[i][j]);
-void reCalcCurrent(int i, int j, int allocated[j][i], int available[i]);
-int bankerAlgorithm(int m, int n, int allocated[n][m], int maximum[n][m], int available[m], int needed[n][m], int arr[n]);
+void calcNeeded(int i, int j, int **allocated, int maximum[i][j], int **needed);
+void reCalcCurrent();
+int bankerAlgorithm(int m, int n, int **allocated, int maximum[n][m], int available[m], int **needed, int arr[n]);
 void *threadRun(void *p);
 
 
@@ -48,20 +70,23 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+
+
+	// Intializing Semaphores
+	sem_init(&sem_even, 0, 0);
+	sem_init(&sem_odd, 0 ,0);
+
+
+
 	/**
 	 * ----------------------------------------------------------------
-	 * Storing Available resources Data from Command line Input into 
-	 * an Array
+	 * Calculating Available Size
 	 * ----------------------------------------------------------------
 	 **/
 
 	int available_size = argc - 1;
-	int available[available_size];
-
-	for (int i = 0; i < available_size; i++)
-		available[i] = atoi(argv[i + 1]);
-
-
+	
+	
 
 	/**
 	 * ----------------------------------------------------------------
@@ -71,6 +96,53 @@ int main(int argc, char *argv[])
 
 	int customers = getCustCount("sample4_in.txt") + 1;
 	printf("Number of Customers: %d\n", customers);
+
+
+	
+	/**
+	 * ----------------------------------------------------------------
+	 * Initializing Arrays
+	 * ----------------------------------------------------------------
+	 **/
+
+	cust = (Customer*)malloc(sizeof(Customer));
+	cust->record_size = available_size;
+	cust->customers = customers;
+
+
+	available = (int*)malloc(available_size * sizeof(int)); // Dynamically Allocating array for Available
+	if (available == NULL) { 
+        printf("ERROR: Malloc Failure\n"); 
+        return -1;
+    }
+
+	// Intializing available array to argv values
+	for (int i = 0; i < available_size; i++)
+		available[i] = atoi(argv[i + 1]);
+
+
+	// Dynamically Allocating 2D array for Allocated
+	allocated = (int **)malloc(customers * sizeof(int *));
+	
+	for (int i = 0; i < customers; i++)
+		allocated[i] = (int *)malloc(available_size * sizeof(int));
+
+	
+	// Initialize allocated array to zeros
+	for(int m = 0; m < customers; m++) {
+    	for(int n = 0; n < available_size; n++)
+    		allocated[m][n] = 0;
+	}
+	
+
+	// Dynamically Allocating 2D array for Needed
+	needed = (int **)malloc(customers * sizeof(int *));
+	
+	for (int i = 0; i < customers; i++)
+		needed[i] = (int *)malloc(available_size * sizeof(int));
+	
+	
+	int arr[customers]; // Temporary array for storing data
 
 
 
@@ -194,24 +266,6 @@ int main(int argc, char *argv[])
     char run[MAXIN] = "run\n"; // Run Safe Sequence
     char exit_prog[MAXIN] = "exit\n"; // Exit Program
 	
-
-
-	/**
-	 * ----------------------------------------------------------------
-	 * Initializing Arrays
-	 * ----------------------------------------------------------------
-	 **/
-
-	int allocated[customers][available_size]; // Declare 2D array for Allocated
-	int needed[customers][available_size]; // Declare 2D array for Needed
-	int arr[customers]; // Temporary array for storing data
-
-	// Initialize allocated array to zeros
-	for(int m = 0; m < customers; m++) {
-    	for(int n = 0; n < available_size; n++)
-    		allocated[m][n] = 0;
-	}
-
 
 
 	/**
@@ -349,7 +403,7 @@ int main(int argc, char *argv[])
 			// Print Currently Available Resources
 			printf("Currently Available Resources: ");
 
-			reCalcCurrent(available_size, customers, allocated, available);
+			reCalcCurrent();
 
 
 			for (int l = 0; l < available_size; l++)
@@ -436,6 +490,12 @@ int main(int argc, char *argv[])
 	}
 
 
+
+	// Free Dynamically Stored Data
+	free(available);
+	free(allocated);
+	free(needed);
+
 	return 0;
 }
 
@@ -478,7 +538,7 @@ int getCustCount(char *filename) {
  * calcNeeded - Calculates Needed Resources
  * ================================================================
  **/
-void calcNeeded(int i, int j, int allocated[j][i], int maximum[j][i], int needed[j][i]) {
+void calcNeeded(int i, int j, int **allocated, int maximum[j][i], int **needed) {
 
 	for (int m = 0; m < j; m++) {
 		for (int n = 0; n < i; n++)
@@ -493,20 +553,20 @@ void calcNeeded(int i, int j, int allocated[j][i], int maximum[j][i], int needed
  * reCalcCurrent - Calculates Current Resources
  * ================================================================
  **/
-void reCalcCurrent(int i, int j, int allocated[j][i], int available[i]) {
+void reCalcCurrent() {
 
-	// int temp;
-	// int temp2;
+	int temp;
+	int temp2;
 
-	// for (int m = 0; m < i; m++) {
-	// 	temp = 0;
+	for (int m = 0; m < cust->record_size; m++) {
+		temp = 0;
 
-	// 	for (int n = 0; n < j; n++)
-	// 		temp = temp + allocated[n][m];
-
-	// 	temp2 = available[i] - temp;
-	// 	available[i] = temp2;
-	// }
+		for (int n = 0; n < cust->customers; n++)
+			temp = temp + allocated[n][m];
+		
+		temp2 = available[m] - temp;
+		available[m] = temp2;
+	}
 }
 
 
@@ -516,7 +576,7 @@ void reCalcCurrent(int i, int j, int allocated[j][i], int available[i]) {
  * bankerAlgorithm - Performs the Banker's Algorithm
  * ================================================================
  **/
-int bankerAlgorithm(int m, int n, int allocated[n][m], int maximum[n][m], int available[m], int needed[n][m], int arr[n])
+int bankerAlgorithm(int m, int n, int **allocated, int maximum[n][m], int available[m], int **needed, int arr[n])
 {
     int i, j, k;
     int safe = 1;
@@ -585,17 +645,48 @@ int bankerAlgorithm(int m, int n, int allocated[n][m], int maximum[n][m], int av
  **/
 void *threadRun(void *p) {
 
-	printf("\t\tAllocated Resources:\t");
+	int *client = (int *)p;
+
+	printf("\tAllocated Resources:\t");
+	for (int p = 0; p < cust->record_size; p++)
+		printf("%d ", allocated[*client][p]);
 	
-	printf("\t\tNeeded:\t");
+
+	printf("\n");
+    
 	
-	printf("\t\tAvailable");
+	printf("\tNeeded:\t");
+    for (int i=0; i< cust->record_size; i++){
+        printf("%d ", needed[*client][i]);
+    }
+
+
+    printf("\n");
+    
 	
-	printf("\t\tThread has started\n");
-	printf("\t\tThread has finished\n");
-	printf("\t\tThread is realeasing resources\n");
-	
-	printf("\t\tNew Available: ");
+	printf("\tAvailable:\t");
+    for (int i=0; i< cust->record_size; i++){
+        printf("%d ", available[i]);
+    }
+
+
+    printf("\n");
+
+
+    printf("\tThread has started\n");
+    printf("\tThread has finished\n");
+    printf("\tThread is realeasing resources\n");
+    
+
+	printf("\tNew Available:\t");
+    
+	for (int i=0; i< cust->record_size; i++){
+        available[i] =  available[i] + allocated[*client][i];
+        printf("%d ", available[i]);
+    }
+
+
+    printf("\n");
 	
 	return NULL;
 

@@ -49,9 +49,9 @@ This project is licensed under MIT License. Please review the *LICENSE.md* file 
 
 ## Screenshots
 
-Screenshots will be added under here in future...
+A sample execution of the program:
 
-
+![Screenshot](C:\Users\kaish\Documents\VSC Workspace\CP386\183168050_a04\Resources\Screenshot.PNG)
 
  
 
@@ -118,3 +118,10 @@ Screenshots will be added under here in future...
 3. <u>Function</u>: reCalcCurrent() is added
 4. Minor Bugs were fixed
 5. Comments added
+
+
+
+#### Ninth Commit:
+
+1. Available, Needed, Allocated arrays are now Globally Declared and Dynamically Allocated
+2. <u>Function</u>: threadRun() now works correctly
